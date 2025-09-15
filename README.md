@@ -7,7 +7,7 @@ sdk: docker
 app_port: 7860
 ---
 
-# AyurMind AI - RAG Application
+# AyurMind AI - RAG Chatbot Application
 
 This is a RAG (Retrieval-Augmented Generation) application for answering questions about Ayurvedic texts.
 
