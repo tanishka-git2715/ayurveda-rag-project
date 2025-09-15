@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AyurMind AI Control Panel</title>
+    <style>
+        body { font-family: sans-serif; background-color: #f4f4f9; color: #333; }
+        #progress { border: 1px solid #ccc; padding: 10px; margin-top: 10px; height: 300px; overflow-y: scroll; background-color: #fff; }
+        button { font-size: 1rem; padding: 10px 15px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h2>AyurMind AI - Vectorstore Rebuild</h2>
+    <button id="rebuildButton">Start Rebuild</button>
+    <h3>Progress:</h3>
+    <pre id="progress"></pre>
+
+    <script>
+        const rebuildButton = document.getElementById('rebuildButton');
+        const progressDiv = document.getElementById('progress');
+
+        rebuildButton.addEventListener('click', () => {
+            progressDiv.innerHTML = ''; // Clear previous logs
+            rebuildButton.disabled = true;
+            rebuildButton.textContent = 'Rebuilding...';
+
+            // Connect to the streaming endpoint
+            const eventSource = new EventSource('/rebuild');
+
+            eventSource.onmessage = function(event) {
+                // Append each new message
+                progressDiv.innerHTML += event.data + '\n';
+                
+                if (event.data === 'DONE') {
+                    eventSource.close(); // Close the connection
+                    rebuildButton.disabled = false;
+                    rebuildButton.textContent = 'Start Rebuild';
+                    progressDiv.innerHTML += '\nRebuild complete! You can now use the /ask endpoint.\n';
+                }
+            };
+
+            eventSource.onerror = function(err) {
+                console.error("EventSource failed:", err);
+                eventSource.close();
+                rebuildButton.disabled = false;
+                rebuildButton.textContent = 'Start Rebuild';
+            };
+        });
+    </script>
+</body>
+</html>
