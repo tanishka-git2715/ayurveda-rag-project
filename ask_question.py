@@ -2,7 +2,7 @@ import requests
 import json
 
 # The URL of your running FastAPI application
-url = "http://127.0.0.1:8000/ask"
+url = "https://tanishka2005-ayurveda-rag.hf.space/ask"
 
 # The question you want to ask
 my_question = "What are the three doshas in Ayurveda?"
