@@ -20,19 +20,18 @@
         const progressDiv = document.getElementById('progress');
 
         rebuildButton.addEventListener('click', () => {
-            progressDiv.innerHTML = ''; // Clear previous logs
+            progressDiv.innerHTML = ''; 
             rebuildButton.disabled = true;
             rebuildButton.textContent = 'Rebuilding...';
 
-            // Connect to the streaming endpoint
             const eventSource = new EventSource('/rebuild');
 
             eventSource.onmessage = function(event) {
-                // Append each new message
+                
                 progressDiv.innerHTML += event.data + '\n';
                 
                 if (event.data === 'DONE') {
-                    eventSource.close(); // Close the connection
+                    eventSource.close(); 
                     rebuildButton.disabled = false;
                     rebuildButton.textContent = 'Start Rebuild';
                     progressDiv.innerHTML += '\nRebuild complete! You can now use the /ask endpoint.\n';
