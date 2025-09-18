@@ -1,4 +1,4 @@
-# AyurMind AI - RAG Chatbot Application
+# Ayurveda AI - RAG Chatbot Application
 
 This is a RAG (Retrieval-Augmented Generation) application for answering questions about Ayurvedic texts.
 
