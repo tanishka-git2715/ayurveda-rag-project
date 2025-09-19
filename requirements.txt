@@ -7,7 +7,6 @@ langchain-google-genai
 faiss-cpu
 PyMuPDF
 langchain-community
-
 google-generativeai
 markdown2
 groq
