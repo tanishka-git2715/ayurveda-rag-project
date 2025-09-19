@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from langchain_community.document_loaders import PyMuPDFLoader, TextLoader
+from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from pinecone import Pinecone
@@ -28,7 +28,7 @@ def populate_vectorstore():
             print(f"--> Processing file: {file}")
             try:
                 if file.endswith(".pdf"):
-                    loader = PyMuPDFLoader(path)
+                    loader = PyPDFLoader(path)
                     documents.extend(loader.load())
                 elif file.endswith(".txt"):
                     loader = TextLoader(path, encoding="utf-8")
