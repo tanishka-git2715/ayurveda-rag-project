@@ -115,7 +115,7 @@ Question:
     return rag_chain
 
 # --- MEMORY ---
-conversation_histories = {}  # session_id -> { messages: [], last_chart_mode: str, last_chart_data: str }
+conversation_histories = {}  
 
 # --- ASK ENDPOINT WITH MULTI-TURN SUPPORT ---
 @app.post("/ask")
@@ -148,7 +148,6 @@ Query:
     if mode not in ["text", "diet", "pdf"]:
         mode = "text"
 
-    # If follow-up, persist original chart mode
     if mode == "text" and session_data.get("last_chart_mode"):
         mode = session_data["last_chart_mode"]
 
