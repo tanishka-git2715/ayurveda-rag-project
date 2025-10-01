@@ -118,47 +118,69 @@ Question:
 conversation_histories = {}  # session_id -> { messages: [], last_chart_mode: str, last_chart_data: str }
 
 # --- ASK ENDPOINT WITH MULTI-TURN SUPPORT ---
+# --- HELPER: CLASSIFY QUERY ---
+def classify_query(user_input: str) -> str:
+    """Classify query into: text, diet, pdf."""
+    try:
+        messages = [
+            {"role": "system", "content": "Classify the query into one of: text, diet, pdf. Reply with ONLY one word."},
+            {"role": "user", "content": user_input}
+        ]
+        completion = client.chat.completions.create(
+            model="gemma2-9b-it",
+            messages=messages,
+            temperature=0,
+            max_completion_tokens=10,
+        )
+        return completion.choices[0].message.content.strip().lower()
+    except Exception as e:
+        print("Classification error:", e)
+        return "text"
+
+
+# --- ASK ENDPOINT WITH FIXED FOLLOW-UP ---
 @app.post("/ask")
 async def ask_question(query: Query, request: Request):
     global chain, retriever
     if chain is None or retriever is None:
         return {"error": "RAG chain not ready. Run /rebuild first."}
 
+    # --- Get or create session ---
     session_id = request.headers.get("X-Session-Id") or str(uuid.uuid4())
     if session_id not in conversation_histories:
-        conversation_histories[session_id] = {"messages": [], "last_chart_mode": None, "last_chart_data": None}
-
+        conversation_histories[session_id] = {
+            "messages": [],
+            "last_chart_mode": None,
+            "last_chart_data": None,
+            "system_prompt": None
+        }
     session_data = conversation_histories[session_id]
-    user_input = query.question
+
+    # --- User input ---
+    user_input = query.question.strip()
     session_data["messages"].append({"role": "user", "content": user_input})
 
+    # --- Retrieve context ---
     docs = retriever.get_relevant_documents(user_input)
     context_text = "\n".join([doc.page_content for doc in docs]) or "No relevant context."
 
-    # Mode classification
-    classification_prompt = f"""
-Classify the query into one of: "text", "diet", "pdf".
-Return ONLY the mode.
-
-Query:
-{user_input}
-"""
-    mode_response = await asyncio.to_thread(chain.invoke, classification_prompt)
-    mode = mode_response.strip().lower()
+    # --- Classify query ---
+    mode = classify_query(user_input)
     if mode not in ["text", "diet", "pdf"]:
         mode = "text"
 
-    # If follow-up, persist original chart mode
+    # Preserve follow-up mode (e.g., still in "diet" conversation)
     if mode == "text" and session_data.get("last_chart_mode"):
         mode = session_data["last_chart_mode"]
 
-    # Build task-specific prompt
-    if mode in ["diet", "pdf"]:
-        session_data["last_chart_mode"] = mode
-        missing_fields = ", ".join(REQUIRED_FIELDS[mode])
-        role = "Dietitian" if mode == "diet" else "Wellness Consultant"
-        output_type = "7-day personalized diet chart in Markdown" if mode == "diet" else "comprehensive wellness report"
-        system_prompt = f"""
+    # --- Build system prompt (only once per mode/session) ---
+    if session_data["system_prompt"] is None or session_data["last_chart_mode"] != mode:
+        if mode in ["diet", "pdf"]:
+            session_data["last_chart_mode"] = mode
+            missing_fields = ", ".join(REQUIRED_FIELDS[mode])
+            role = "Dietitian" if mode == "diet" else "Wellness Consultant"
+            output_type = "7-day personalized diet chart in Markdown" if mode == "diet" else "comprehensive wellness report"
+            session_data["system_prompt"] = f"""
 You are AyurMind, an expert Ayurvedic {role}.
 
 Phased Task:
@@ -171,15 +193,16 @@ Instruction:
 
 Context: {context_text}
 """
-    else:
-        system_prompt = f"""
+        else:
+            session_data["system_prompt"] = f"""
 You are AyurMind, an expert Ayurvedic Dietitian.
 Context: {context_text}
 """
 
-    # Combine system + history
-    messages = [{"role": "system", "content": system_prompt}] + session_data["messages"]
+    # --- Combine system + history ---
+    messages = [{"role": "system", "content": session_data["system_prompt"]}] + session_data["messages"]
 
+    # --- Call LLM ---
     completion = client.chat.completions.create(
         model="gemma2-9b-it",
         messages=messages,
@@ -191,24 +214,27 @@ Context: {context_text}
     reply = completion.choices[0].message.content
     session_data["messages"].append({"role": "assistant", "content": reply})
 
-    # Track last chart data
+    # --- Track last chart data ---
     if mode in ["diet", "pdf"]:
         session_data["last_chart_data"] = reply
 
-    # Mode-specific return
+    # --- Return based on mode ---
     if mode == "pdf":
         return JSONResponse({
             "mode": mode,
             "wellness_report": session_data["last_chart_data"],
-            "is_wellness_ready": True
+            "is_wellness_ready": True,
+            "session_id": session_id
         })
     elif mode == "diet":
-        pattern = re.compile(r"(breakfast|lunch|dinner|day\s*1|day\s*2|day\s*3|day\s*4|day\s*5|day\s*6|day\s*7)")
+        # detect if final chart generated
+        pattern = re.compile(r"(breakfast|lunch|dinner|day\s*1|day\s*7)")
         final_chart = bool(pattern.search(reply.lower()))
         return JSONResponse({
             "mode": mode,
             "diet_chart": session_data["last_chart_data"],
-            "is_final_chart": final_chart
+            "is_final_chart": final_chart,
+            "session_id": session_id
         })
     else:
         return JSONResponse({
