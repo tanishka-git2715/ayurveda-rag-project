@@ -2,6 +2,7 @@ import os
 import asyncio
 import threading
 import uuid
+from typing import Optional
 from queue import Queue
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
