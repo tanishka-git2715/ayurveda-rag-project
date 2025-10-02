@@ -11,3 +11,5 @@ pinecone
 markdown2
 langchain_huggingface
 reportlab
+langchain-community
+pymupdf
