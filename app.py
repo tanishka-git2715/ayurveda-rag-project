@@ -2,9 +2,11 @@ import os
 import asyncio
 import threading
 import uuid
+import json
 from typing import Optional, List, Dict
 from queue import Queue
 from dotenv import load_dotenv
+from fastapi import FastAPI, Request, HTTPException
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, StreamingResponse, HTMLResponse, JSONResponse
 from pydantic import BaseModel
@@ -22,7 +24,7 @@ from reportlab.lib.pagesizes import A4
 import markdown2
 from groq import Groq
 from fastapi.middleware.cors import CORSMiddleware
-
+app = FastAPI()
 class PatientInfo(BaseModel):
     name: str
     age: int
@@ -118,7 +120,7 @@ async def generate_diet_chart(request: DietGenerationRequest):
 # HELPER FUNCTIONS
 # ============================================================================
 
-async def generate_nutrition_goals(patient: PatientInfo) -> Dict:
+def generate_nutrition_goals(patient: PatientInfo) -> Dict:
     """Generate personalized nutrition goals based on patient profile"""
     
     # Base goals by age and gender
@@ -298,7 +300,7 @@ def get_constitution_guidance(constitution: str) -> str:
     return guidance.get(constitution.lower(), guidance["vata"])
 
 
-async def parse_diet_response_to_structure(diet_response: str, foods: List[Food]) -> Dict:
+def parse_diet_response_to_structure(diet_response: str, foods: List[Food]) -> Dict:
     """
     Parse AI-generated diet chart text into structured JSON format.
     This is the critical function that converts AI text to the required format.
@@ -473,7 +475,6 @@ client = Groq(api_key=groq_api_key)
 DATA_PATH = "data/"
 VECTOR_STORE_PATH = "vectorstore/"
 
-app = FastAPI()
 chain = None
 retriever = None
 rebuild_lock = threading.Lock()
@@ -707,9 +708,6 @@ async def rebuild_endpoint():
 
     headers = {"Content-Type": "text/event-stream"}
     return StreamingResponse(stream_generator(), headers=headers)
-
-# --- MEMORY ---
-conversation_histories = {}
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root():
