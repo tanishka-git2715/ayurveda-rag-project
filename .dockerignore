@@ -6,9 +6,7 @@ env/
 venv/
 .git/
 .gitignore
-data/
 datasets/
-*.pdf
 *.csv
 *.json
 *.zip
