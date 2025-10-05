@@ -61,7 +61,7 @@ if not api_key:
 groq_api_key = os.getenv("GROQ_API_KEY")
 client = Groq(api_key=groq_api_key)
 
-DATA_PATH = "data/"
+DATA_PATH = "data/ayurveda_books/"
 VECTOR_STORE_PATH = "vectorstore/"
 
 chain = None
