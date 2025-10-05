@@ -68,7 +68,7 @@ chain = None
 retriever = None
 rebuild_lock = threading.Lock()
 
-origins = ["http://localhost:5173", "http://127.0.0.1:5173"]
+origins = ["http://localhost:5173", "http://127.0.0.1:5173", "https://ayurdev-patient.vercel.app"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
