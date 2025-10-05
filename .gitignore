@@ -3,7 +3,6 @@ venv/
 .vscode/
 venv/
 __pycache__/
-vectorstore/
 *.pyc
 .venv
 vercel.json
