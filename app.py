@@ -61,7 +61,7 @@ if not api_key:
 groq_api_key = os.getenv("GROQ_API_KEY")
 client = Groq(api_key=groq_api_key)
 
-DATA_PATH = "data/"
+DATA_PATH = "data/ayurveda_books/"
 VECTOR_STORE_PATH = "vectorstore/"
 
 chain = None
@@ -234,6 +234,8 @@ async def diet_chart_pdf(payload: dict):
 def rebuild_worker(q: Queue):
     global chain, retriever
     q.put("Starting rebuild...")
+    q.put(f"--- Searching for documents in: {os.path.abspath(DATA_PATH)}")
+    q.put(f"--- Files found: {os.listdir(DATA_PATH)}")
 
     try:
         documents = []
@@ -323,4 +325,3 @@ async def startup_event():
             retriever = None
     else:
         print("No vectorstore found. Run /rebuild first.")
-
