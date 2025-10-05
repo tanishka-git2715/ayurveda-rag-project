@@ -13,3 +13,5 @@ langchain_huggingface
 reportlab
 langchain-community
 pymupdf
+sentence-transformer
+faiss-cpu

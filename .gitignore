@@ -6,3 +6,6 @@ __pycache__/
 vectorstore/
 *.pyc
 .venv
+vercel.json
+.vercel
+
