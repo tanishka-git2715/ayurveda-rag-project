@@ -10,3 +10,4 @@ faiss-cpu
 markdown2
 reportlab
 pymupdf
+sentence-transformers==2.2.2
