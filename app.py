@@ -318,10 +318,13 @@ async def startup_event():
             db = FAISS.load_local(VECTOR_STORE_PATH, embeddings, allow_dangerous_deserialization=True)
             retriever = db.as_retriever(search_kwargs={"k": 5})
             chain = create_rag_chain(retriever)
-            print("RAG chain loaded successfully.")
+            print("✅ RAG chain loaded successfully.")
         except Exception as e:
-            print(f"Error loading vectorstore: {e}")
+            print(f"⚠️ Error loading vectorstore: {e}")
             chain = None
             retriever = None
     else:
-        print("No vectorstore found. Run /rebuild first.")
+        print("⚙️ No vectorstore found — rebuilding automatically...")
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, rebuild_worker, Queue()) 
+        print("✅ Vectorstore rebuilt on startup.")
