@@ -313,15 +313,18 @@ def health():
 async def startup_event():
     global chain, retriever
 
-    async def rebuild_async():
-        q = Queue()
-        await asyncio.to_thread(rebuild_worker, q)
-        print("✅ Vectorstore rebuilt on startup.")
+    VECTOR_STORE_PATH = "./vectorstore"
 
+    # Try to load an existing FAISS index only (no rebuild)
     if os.path.exists(VECTOR_STORE_PATH) and any(os.scandir(VECTOR_STORE_PATH)):
         try:
+            print("📂 Loading existing FAISS vectorstore...")
             embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-            db = FAISS.load_local(VECTOR_STORE_PATH, embeddings, allow_dangerous_deserialization=True)
+            db = FAISS.load_local(
+                VECTOR_STORE_PATH,
+                embeddings,
+                allow_dangerous_deserialization=True
+            )
             retriever = db.as_retriever(search_kwargs={"k": 5})
             chain = create_rag_chain(retriever)
             print("✅ RAG chain loaded successfully.")
@@ -329,7 +332,8 @@ async def startup_event():
             print(f"⚠️ Error loading vectorstore: {e}")
             retriever = None
             chain = None
-            await rebuild_async()
     else:
-        print("⚙️ No vectorstore found. Rebuilding automatically...")
-        await rebuild_async()
+        # No auto rebuild — saves memory on startup
+        print("⚙️ No vectorstore found. Skipping rebuild on startup (Render Free mode).")
+        retriever = None
+        chain = None
