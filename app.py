@@ -312,6 +312,12 @@ def health():
 @app.on_event("startup")
 async def startup_event():
     global chain, retriever
+
+    async def rebuild_async():
+        q = Queue()
+        await asyncio.to_thread(rebuild_worker, q)
+        print("✅ Vectorstore rebuilt on startup.")
+
     if os.path.exists(VECTOR_STORE_PATH) and any(os.scandir(VECTOR_STORE_PATH)):
         try:
             embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
@@ -321,10 +327,9 @@ async def startup_event():
             print("✅ RAG chain loaded successfully.")
         except Exception as e:
             print(f"⚠️ Error loading vectorstore: {e}")
-            chain = None
             retriever = None
+            chain = None
+            await rebuild_async()
     else:
-        print("⚙️ No vectorstore found — rebuilding automatically...")
-        loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, rebuild_worker, Queue()) 
-        print("✅ Vectorstore rebuilt on startup.")
+        print("⚙️ No vectorstore found. Rebuilding automatically...")
+        await rebuild_async()
